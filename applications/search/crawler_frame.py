@@ -93,8 +93,16 @@ def process_url_group(group, useragentstr):
 '''
 STUB FUNCTIONS TO BE FILLED OUT BY THE STUDENT.
 '''
+def write_analytics():
+    analyticsFile = open('analytics.txt', 'w')
+    analyticsFile.write('SUBDOMAINS: ' + str(SUBDOMAINS))
+    analyticsFile.write('\n')
+    analyticsFile.write('INVALID LINKS: ' + str(INVALID_LINKS))
+    analyticsFile.write('\n')
+    analyticsFile.write('MOST OUT: ' + MOST_OUT)
+
 def extract_next_links(rawDatas):
-    global SUBDOMAINS
+    global SUBDOMAIN
     #print("Checking enl1####################################################")
     outputLinks = list()
     for item in rawDatas:
@@ -119,8 +127,10 @@ def extract_next_links(rawDatas):
                 if parsed.scheme=='http' and 'ics.uci.edu' in parsed.netloc:
                     if parsed.netloc not in SUBDOMAINS:
                         SUBDOMAINS[parsed.netloc] = 1
+                        write_analytics()
                     else:
                         SUBDOMAINS[parsed.netloc] = SUBDOMAINS[parsed.netloc] + 1
+                        write_analytics()
                     outputLinks.append(link[2])
                     print("\n")
                     print(SUBDOMAINS)
@@ -188,16 +198,19 @@ def is_valid(url):
                 print("BAD PATH######################################################")
                 #url.bad_url=True
                 INVALID_LINKS = INVALID_LINKS + 1
+                write_analytics()
                 return False
         if "calendar" in item.lower():
             print("BAD CAL######################################################")
             #url.bad_url=True
             INVALID_LINKS = INVALID_LINKS + 1
+            write_analytics()
             return False
         if len(item)>300:
             print("BAD WIX######################################################")
             #url.bad_url=True
             INVALID_LINKS = INVALID_LINKS + 1
+            write_analytics()
             return False
     
     ##############################################################################
