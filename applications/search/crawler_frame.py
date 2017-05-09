@@ -32,7 +32,7 @@ MAX_LINKS_TO_DOWNLOAD = 3000
 #####################
 SUBDOMAINS = {} # Key: Subdomain (String) | Value: URLs Processed (int)
 INVALID_LINKS = 0
-MOST_OUT = ""
+MOST_OUT = ['None', 0] # [0]: Page | [1]: Number of Out Links
 
 @Producer(ProducedLink, Link)
 @GetterSetter(OneUnProcessedGroup)
@@ -99,7 +99,7 @@ def write_analytics():
     analyticsFile.write('\n')
     analyticsFile.write('INVALID LINKS: ' + str(INVALID_LINKS))
     analyticsFile.write('\n')
-    analyticsFile.write('MOST OUT: ' + MOST_OUT)
+    analyticsFile.write('MOST OUT: ' + str(MOST_OUT))
 
 def extract_next_links(rawDatas):
     global SUBDOMAIN
@@ -127,14 +127,13 @@ def extract_next_links(rawDatas):
                 if parsed.scheme=='http' and 'ics.uci.edu' in parsed.netloc:
                     if parsed.netloc not in SUBDOMAINS:
                         SUBDOMAINS[parsed.netloc] = 1
-                        write_analytics()
                     else:
                         SUBDOMAINS[parsed.netloc] = SUBDOMAINS[parsed.netloc] + 1
-                        write_analytics()
                     outputLinks.append(link[2])
-                    print("\n")
-                    print(SUBDOMAINS)
-                    print("\n")
+                    if len(outputLinks) > MOST_OUT[1]:
+                        MOST_OUT[0] = item.url
+                        MOST_OUT[1] = len(outputLinks)
+                    write_analytics()
             print("##########################################################")
         
         #print("Checking enl2####################################################")
