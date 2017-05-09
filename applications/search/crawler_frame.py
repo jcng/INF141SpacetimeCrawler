@@ -27,6 +27,13 @@ url_count = (set()
     set([line.strip() for line in open("successful_urls.txt").readlines() if line.strip() != ""]))
 MAX_LINKS_TO_DOWNLOAD = 3000
 
+#####################
+# ANALYTICS GLOBALS #
+#####################
+SUBDOMAINS = {} # Key: Subdomain (String) | Value: URLs Processed (int)
+INVALID_LINKS = 0
+MOST_OUT = ['None', 0] # [0]: Page | [1]: Number of Out Links
+
 @Producer(ProducedLink, Link)
 @GetterSetter(OneUnProcessedGroup)
 class CrawlerFrame(IApplication):
@@ -86,7 +93,16 @@ def process_url_group(group, useragentstr):
 '''
 STUB FUNCTIONS TO BE FILLED OUT BY THE STUDENT.
 '''
+def write_analytics():
+    analyticsFile = open('analytics.txt', 'w')
+    analyticsFile.write('SUBDOMAINS: ' + str(SUBDOMAINS))
+    analyticsFile.write('\n')
+    analyticsFile.write('INVALID LINKS: ' + str(INVALID_LINKS))
+    analyticsFile.write('\n')
+    analyticsFile.write('MOST OUT: ' + str(MOST_OUT))
+
 def extract_next_links(rawDatas):
+    global SUBDOMAIN
     #print("Checking enl1####################################################")
     outputLinks = list()
     for item in rawDatas:
@@ -108,14 +124,22 @@ def extract_next_links(rawDatas):
                 parsed = urlparse(link[2])
                 print(parsed)
                 print(link)
-                if parsed.scheme=='http' and parsed.netloc=='www.ics.uci.edu':
+                if parsed.scheme=='http' and 'ics.uci.edu' in parsed.netloc:
+                    if parsed.netloc not in SUBDOMAINS:
+                        SUBDOMAINS[parsed.netloc] = 1
+                    else:
+                        SUBDOMAINS[parsed.netloc] = SUBDOMAINS[parsed.netloc] + 1
                     outputLinks.append(link[2])
+                    if len(outputLinks) > MOST_OUT[1]:
+                        MOST_OUT[0] = item.url
+                        MOST_OUT[1] = len(outputLinks)
+                    write_analytics()
             print("##########################################################")
         
         #print("Checking enl2####################################################")
         
     '''
-    rawDatas is a list of objs -> [raw_content_obj1, raw_content_obj2, ....]
+    rawDatas is a list of objs -> [raw_content_obj1, raw_conteLaidnt_obj2, ....]
     Each obj is of type UrlResponse  declared at L28-42 datamodel/search/datamodel.py
     the return of this function should be a list of urls in their absolute form
     Validation of link via is_valid function is done later (see line 42).
@@ -162,6 +186,8 @@ def is_valid(url):
         url.bad_url=True
         return False
     '''
+
+    global INVALID_LINKS
     
     split_path=parsed.path.split('/')
     for item in split_path:
@@ -170,14 +196,20 @@ def is_valid(url):
                 #print(split_path,"#################################")
                 print("BAD PATH######################################################")
                 #url.bad_url=True
+                INVALID_LINKS = INVALID_LINKS + 1
+                write_analytics()
                 return False
         if "calendar" in item.lower():
             print("BAD CAL######################################################")
             #url.bad_url=True
+            INVALID_LINKS = INVALID_LINKS + 1
+            write_analytics()
             return False
         if len(item)>300:
             print("BAD WIX######################################################")
             #url.bad_url=True
+            INVALID_LINKS = INVALID_LINKS + 1
+            write_analytics()
             return False
     
     ##############################################################################
