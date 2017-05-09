@@ -45,7 +45,7 @@ class CrawlerFrame(IApplication):
         # Set user agent string to IR W17 UnderGrad <student_id1>, <student_id2> ...
         # If Graduate studetn, change the UnderGrad part to Grad.
         self.UserAgentString = "IR S17 UnderGrad 56103533, 27358552, 49463175"
-		
+        
         self.frame = frame
         assert(self.UserAgentString != None)
         assert(self.app_id != "")
@@ -103,41 +103,44 @@ def write_analytics():
 
 def extract_next_links(rawDatas):
     global SUBDOMAIN
+    global INVALID_LINKS
     #print("Checking enl1####################################################")
     outputLinks = list()
     for item in rawDatas:
-        print("CONTENT ####################################################")
-        print(item.content)
-        print("#############################################################")
-        try:
-            content = urllib2.urlopen(item.url).read()
-        except urllib2.URLError:
-            print("ERRORHTTP################################################")
+        if item.error_message=='':
+            try:
+                content = urllib2.urlopen(item.url).read()
+            except urllib2.URLError:
+                print("ERRORHTTP################################################")
+            else:
+                print("SUCCESS###############################################")
+                print("CHK HTML###############################################")
+                h = html.fromstring(content)
+                h.make_links_absolute(item.url)
+                print (html.tostring(h))
+                print("########################################################")
+                for link in h.iterlinks():
+                    parsed = urlparse(link[2])
+                    print(parsed)
+                    print(link)
+                    if parsed.scheme=='http' and 'ics.uci.edu' in parsed.netloc:
+                        if parsed.netloc not in SUBDOMAINS:
+                            SUBDOMAINS[parsed.netloc] = 1
+                        else:
+                            SUBDOMAINS[parsed.netloc] = SUBDOMAINS[parsed.netloc] + 1
+                        outputLinks.append(link[2])
+                        if len(outputLinks) > MOST_OUT[1]:
+                            MOST_OUT[0] = item.url
+                            MOST_OUT[1] = len(outputLinks)
+                        write_analytics()
+                print("##########################################################")
+            
+            #print("Checking enl2####################################################")
         else:
-            print("SUCCESS###############################################")
-            print("CHK HTML###############################################")
-            h = html.fromstring(content)
-            h.make_links_absolute(item.url)
-            print (html.tostring(h))
-            print("########################################################")
-            for link in h.iterlinks():
-                parsed = urlparse(link[2])
-                print(parsed)
-                print(link)
-                if parsed.scheme=='http' and 'ics.uci.edu' in parsed.netloc:
-                    if parsed.netloc not in SUBDOMAINS:
-                        SUBDOMAINS[parsed.netloc] = 1
-                    else:
-                        SUBDOMAINS[parsed.netloc] = SUBDOMAINS[parsed.netloc] + 1
-                    outputLinks.append(link[2])
-                    if len(outputLinks) > MOST_OUT[1]:
-                        MOST_OUT[0] = item.url
-                        MOST_OUT[1] = len(outputLinks)
-                    write_analytics()
-            print("##########################################################")
-        
-        #print("Checking enl2####################################################")
-        
+            item.bad_url=True 
+            INVALID_LINKS = INVALID_LINKS+1
+            write_analytics()
+            print("ERROR",item.error_message,"####################################") 
     '''
     rawDatas is a list of objs -> [raw_content_obj1, raw_conteLaidnt_obj2, ....]
     Each obj is of type UrlResponse  declared at L28-42 datamodel/search/datamodel.py
@@ -145,7 +148,6 @@ def extract_next_links(rawDatas):
     Validation of link via is_valid function is done later (see line 42).
     It is not required to remove duplicates that have already been downloaded. 
     The frontier takes care of that.
-
     Suggested library: lxml
     '''
     return outputLinks
@@ -155,7 +157,6 @@ def is_valid(url):
     '''
     Function returns True or False based on whether the url has to be downloaded or not.
     Robot rules and duplication rules are checked separately.
-
     This is a great place to filter out crawler traps.
     '''
     parsed = urlparse(url)
@@ -189,6 +190,13 @@ def is_valid(url):
 
     global INVALID_LINKS
     
+    if "calendar" in url.lower():
+            print("BAD CAL######################################################")
+            #url.bad_url=True
+            INVALID_LINKS = INVALID_LINKS + 1
+            write_analytics()
+            return False
+        
     split_path=parsed.path.split('/')
     for item in split_path:
         if item!='':
@@ -199,12 +207,6 @@ def is_valid(url):
                 INVALID_LINKS = INVALID_LINKS + 1
                 write_analytics()
                 return False
-        if "calendar" in item.lower():
-            print("BAD CAL######################################################")
-            #url.bad_url=True
-            INVALID_LINKS = INVALID_LINKS + 1
-            write_analytics()
-            return False
         if len(item)>300:
             print("BAD WIX######################################################")
             #url.bad_url=True
@@ -228,4 +230,4 @@ def is_valid(url):
         print ("TypeError for ", parsed)
         
     
-    return True   
+    return True 
