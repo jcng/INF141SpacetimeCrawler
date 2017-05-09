@@ -142,31 +142,6 @@ def is_valid(url):
     ##############################################################################
     ##############################################################################
     
-    
-    '''
-    if re.match('^.*/[^/]{300,}$',url)!=None:
-        print("BAD WIX######################################################")
-        url.bad_url=True
-        return False
-    
-    
-    if re.compile('^.*calendar.*$').match(url)!=None:
-        print("BAD CAL######################################################")
-        url.bad_url=True
-        return False
-    
-    
-    if re.match('^.*?(/.+?/).*?\1.*$|^.*?/(.+?/)\2.*$',url)!=None:
-        print("REP DIR######################################################")
-        url.bad_url=True
-        return False
-    
-    if re.compile('^.*(/misc|/sites|/all|/themes|/modules|/profiles|/css|/field|/node|/theme){3}.*$').match(url)!=None:
-        print("EXT DIR######################################################")
-        url.bad_url=True
-        return False
-    '''
-    
     split_path=parsed.path.split('/')
     for item in split_path:
         if item!='':
